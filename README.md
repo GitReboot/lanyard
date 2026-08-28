@@ -13,8 +13,7 @@ citation, and anything search can't verify is withheld rather than guessed.
 
 ## Team
 
-<!-- REQUIRED before submitting — fill in team name and your teammate -->
-- **Team name:** _TBD_
+**Waveparticle**
 - Suchir Vangaveeti — vangaveeti.v@northeastern.edu
 - _teammate_ — _email_
 
