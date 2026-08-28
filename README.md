@@ -15,7 +15,8 @@ citation, and anything search can't verify is withheld rather than guessed.
 
 **Waveparticle**
 - Suchir Vangaveeti — vangaveeti.v@northeastern.edu
-- _teammate_ — _email_
+- Uryaswi Bhowmick — uryaswibhowmick@gmail.com
+- Yue Li — liyue0021@gmail.com
 
 ## Run it
 
