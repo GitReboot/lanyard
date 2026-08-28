@@ -1,32 +1,82 @@
 # Lanyard
 
-**Scan a conference badge and know who you're talking to — before the conversation ends.**
+**Know who you're talking to, before the conversation ends.**
 
-Point your phone at someone's badge. It extracts their details, then researches both
-the person and their company against live web search, and shows you a glanceable card:
-what they work on, what their company actually does, and what its engineering org is
-known for. Every claim is cited. Anything it can't verify, it doesn't show.
+You meet thirty people at a conference and lose all of them by Monday — and badges
+tell you almost nothing. Lanyard turns a phone camera on a badge, extracts the
+contact, then researches both the person and their employer against live Google
+Search and shows a two-section card: what they work on, what their company
+actually does, and what its engineering org is known for. Every claim carries a
+citation, and anything search can't verify is withheld rather than guessed.
 
-Built for the DevFest DC 2026 Build-a-thon.
+**Live:** https://lanyard-887362198556.us-east1.run.app
 
----
+## Team
 
-## Status
+<!-- REQUIRED before submitting — fill in team name and your teammate -->
+- **Team name:** _TBD_
+- Suchir Vangaveeti — vangaveeti.v@northeastern.edu
+- _teammate_ — _email_
 
-**Working end to end.** Not yet deployed.
+## Run it
 
-| Area | State |
-|---|---|
-| Badge scan → structured contact | done, tested on angled/multi-company/name-only badges |
-| Person research (grounded, cited) | done |
-| Company research (grounded, cited, multi-company) | done |
-| Perspective-corrected badge crop | done |
-| Contacts: save, edit, delete, follow-up priority | done |
-| Export / import between devices | done |
-| Firestore security rules | done, locked down and verified |
-| Cloud Run deploy | **prepared, not yet run** |
+```bash
+cp .env.local.example .env.local   # fill in the 7 values below
+npm install
+npm run dev                        # http://localhost:3000
+```
 
----
+You need two free accounts, both about five minutes:
+
+1. **Gemini API key** — https://aistudio.google.com/apikey. Billing must be enabled:
+   Search grounding's free 1,500/day allowance only exists on paid tiers, and on a
+   free key grounded calls 429 immediately.
+2. **Firebase** — create a project, enable **Anonymous** sign-in and **Firestore**,
+   then copy the web config. Publish `firestore.rules` before going public; test
+   mode lets anyone read and write your whole database.
+
+Verify both halves before touching the UI:
+
+```bash
+node test-assets/verify-firebase.mjs   # anonymous auth + Firestore read/write
+```
+
+Deploy to Cloud Run:
+
+```bash
+./deploy.sh                        # prints the public URL
+```
+
+## What it does
+
+- Scan a badge or business card → name, title, **multiple companies**, **multiple
+  emails**, LinkedIn, raw OCR
+- **Grounded person research** — role, day-to-day work, notable projects, previous
+  employers, all cited
+- **Grounded company research** — what it does, size and stage, engineering angle;
+  one search per company, cached per employer
+- **Perspective-corrected badge crop** — Gemini returns the badge's four corners and
+  a canvas triangle mesh deskews it
+- Contacts: save, edit, delete, Hot/Warm/Cold follow-up, search
+- Export / import JSON between devices, images included
+
+## What we cut, and why
+
+- **No LinkedIn scraping.** Public profiles sit behind an auth wall for logged-out
+  requests and the scraping account gets banned — a demo that breaks on stage is
+  worse than no feature. Search grounding returns the same public information
+  legitimately.
+- **Direct LinkedIn links are dropped unless a search result backs them.** The model
+  will produce a plausible URL from memory; a wrong one lands you on a real
+  *different* person, which is worse than no link. We fall back to a pre-filled search.
+- **No account system.** Anonymous auth only — judges will not sign up to try a demo.
+
+## Known limitations
+
+- Most conference attendees aren't findable online. The person section will often be
+  empty; the company section is the reliable half and is designed to carry the card.
+- Contacts are tied to one device by design. Export/import is the transfer path.
+- Minimum viable research takes 10–20s because grounded search is genuinely slow.
 
 ## How it works
 
