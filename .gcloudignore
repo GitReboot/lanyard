@@ -1,0 +1,17 @@
+# gcloud falls back to .gitignore when this file is absent, and .gitignore
+# excludes .env* — which strips the .env.production that deploy.sh writes for
+# build-time NEXT_PUBLIC_* values. Hence an explicit list.
+#
+# NOTE: the Dockerfile must NOT be excluded here. Cloud Build needs it to build
+# the image; only the local `docker build` context ignores it.
+.git
+node_modules
+.next
+.env.local
+.env*.local
+test-assets
+data/raw
+npm-debug.log*
+README.md
+DEPLOY.md
+FRIDAY.md

@@ -1,0 +1,9 @@
+node_modules
+.next
+.git
+.env.local
+.env*.local
+test-assets
+npm-debug.log*
+README.md
+DEPLOY.md
