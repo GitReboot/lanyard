@@ -21,6 +21,29 @@ export const MODEL_CHAIN = [
 export const MODEL = MODEL_CHAIN[0];
 
 /**
+ * Remember which model last answered, and try it first next time.
+ *
+ * Model health is not static: on 27-28 Aug 2026 the `gemini-flash-latest` alias
+ * returned 503 for over a day while the concrete model behind it was fine.
+ * Without this, every request pays the dead model's timeout before failing over
+ * — measured at 4.3s per attempt, on every single call.
+ *
+ * Resets when the instance recycles, so a recovered model is picked up again
+ * rather than being blacklisted for good.
+ */
+let lastGood: string | null = null;
+
+export function orderedModels(): string[] {
+  if (!lastGood) return MODEL_CHAIN;
+  return [lastGood, ...MODEL_CHAIN.filter((m) => m !== lastGood)];
+}
+
+export function noteWorkingModel(model: string) {
+  lastGood = model;
+}
+
+
+/**
  * Research and structuring are separate HTTP endpoints, not one call, for two reasons:
  *
  * 1. Vercel's Hobby tier kills functions at 10s and `maxDuration` can't raise it.
@@ -237,7 +260,7 @@ async function generateWithFallback(
   params: { contents: unknown; config?: Record<string, unknown> },
 ) {
   let lastError: unknown;
-  for (const model of MODEL_CHAIN) {
+  for (const model of orderedModels()) {
     for (const dropThinking of [false, true]) {
       const config: Record<string, unknown> = { ...(params.config ?? {}) };
       if (dropThinking) {
@@ -245,11 +268,13 @@ async function generateWithFallback(
         delete config.thinkingConfig;
       }
       try {
-        return await ai.models.generateContent({
+        const res = await ai.models.generateContent({
           model,
           contents: params.contents as never,
           config: config as never,
         });
+        noteWorkingModel(model);
+        return res;
       } catch (error) {
         lastError = error;
         const msg = error instanceof Error ? error.message : "";

@@ -1,20 +1,13 @@
 import { GoogleGenAI, Type } from "@google/genai";
 import { NextResponse } from "next/server";
 import type { ExtractedContact } from "@/lib/types";
+import { orderedModels, noteWorkingModel } from "@/lib/enrich-core";
 
 /**
  * Gemini runs server-side with a plain API key. This keeps the key out of the
  * browser and means we don't need Firebase App Check or a Blaze upgrade.
  */
 export const maxDuration = 60;
-
-// Same chain as enrichment: the alias can 503 while concrete models are fine.
-const MODEL_CHAIN = [
-  process.env.GEMINI_MODEL,
-  "gemini-flash-latest",
-  "gemini-3.5-flash",
-  "gemini-flash-lite-latest",
-].filter((m): m is string => Boolean(m));
 
 const contactSchema = {
   type: Type.OBJECT,
@@ -103,7 +96,7 @@ export async function POST(request: Request) {
     // model behind it answered normally, so a single pinned ID is a demo-killer.
     let response: Awaited<ReturnType<typeof ai.models.generateContent>> | undefined;
     let lastError: unknown;
-    for (const model of MODEL_CHAIN) {
+    for (const model of orderedModels()) {
       try {
         response = await ai.models.generateContent({
           model,
@@ -120,6 +113,7 @@ export async function POST(request: Request) {
             httpOptions: { timeout: 45_000, retryOptions: { attempts: 2 } },
           },
         });
+        noteWorkingModel(model);
         break;
       } catch (error) {
         lastError = error;
